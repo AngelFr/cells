@@ -62,6 +62,27 @@ func validHostPort(input string) error {
 	return nil
 }
 
+// ValidScheme validates that url is [SCHEME]://[IP or DOMAIN] "[http/https]://......."
+func validScheme(input string) error {
+	if e := notEmpty(input); e != nil {
+		return e
+	}
+
+	u, err := url.Parse(input)
+	if err != nil {
+		return fmt.Errorf("could not parse URL")
+	}
+
+	if len(u.Scheme) > 0 && len(u.Host) > 0 {
+		if u.Scheme == "http" || u.Scheme == "https" {
+			return nil
+		}
+		return fmt.Errorf("scheme is not http/https")
+	}
+
+	return fmt.Errorf("Please use a [SCHEME]://[IP|DOMAIN] string")
+}
+
 func validPortNumber(input string) error {
 	port, e := strconv.ParseInt(input, 10, 64)
 	if e == nil && port == 0 {
@@ -73,6 +94,10 @@ func validPortNumber(input string) error {
 func validUrl(input string) error {
 	_, e := url.Parse(input)
 	return e
+}
+
+func validDbCredentials(input string) error {
+	return nil
 }
 
 func promptAndSaveInstallUrls() (internal *url.URL, external *url.URL, e error) {
@@ -137,7 +162,7 @@ func promptAndSaveInstallUrls() (internal *url.URL, external *url.URL, e error) 
 
 	extPrompt := p.Prompt{
 		Label:    "External Url, used to access application from outside world (it can differ from internal url if you are behind a proxy or inside a private network)",
-		Validate: validUrl,
+		Validate: validScheme,
 		Default:  fmt.Sprintf("%s://%s", scheme, defaultExternal),
 	}
 	externalUrl, er := extPrompt.Run()
@@ -146,6 +171,7 @@ func promptAndSaveInstallUrls() (internal *url.URL, external *url.URL, e error) 
 		return
 	}
 	externalUrl = strings.TrimSuffix(externalUrl, "/")
+
 	external, e = url.Parse(externalUrl)
 	if e != nil {
 		return
