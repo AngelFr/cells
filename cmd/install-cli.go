@@ -77,7 +77,7 @@ func validScheme(input string) error {
 		if u.Scheme == "http" || u.Scheme == "https" {
 			return nil
 		}
-		return fmt.Errorf("scheme is not http/https")
+		return fmt.Errorf("scheme %s is not supported (only http/https are supported)", u.Scheme)
 	}
 
 	return fmt.Errorf("Please use a [SCHEME]://[IP|DOMAIN] string")
@@ -94,10 +94,6 @@ func validPortNumber(input string) error {
 func validUrl(input string) error {
 	_, e := url.Parse(input)
 	return e
-}
-
-func validDbCredentials(input string) error {
-	return nil
 }
 
 func promptAndSaveInstallUrls() (internal *url.URL, external *url.URL, e error) {
@@ -244,8 +240,8 @@ func promptDB(c *install.InstallConfig) error {
 		Label: "Database Connection Type",
 		Items: []string{"TCP", "Socket", "Manual"},
 	}
-	dbTcpHost := p.Prompt{Label: "Database Hostname", Validate: notEmpty, Default: "localhost"}
-	dbTcpPort := p.Prompt{Label: "Database Port", Validate: validPortNumber, Default: "3306"}
+	dbTcpHost := p.Prompt{Label: "Database Hostname", Validate: notEmpty, Default: c.DbTCPHostname}
+	dbTcpPort := p.Prompt{Label: "Database Port", Validate: validPortNumber, Default: c.DbTCPPort}
 
 	dbName := p.Prompt{Label: "Database Name", Validate: notEmpty, Default: "cells"}
 	dbUser := p.Prompt{Label: "Database User", Validate: notEmpty}
@@ -296,7 +292,7 @@ func promptDB(c *install.InstallConfig) error {
 		}
 	}
 	if res := lib.PerformCheck(context.Background(), "DB", c); !res.Success {
-		fmt.Println(p.IconBad + " Wrong Database information! try again")
+		fmt.Println(p.IconBad + " Wrong Database information, Try again")
 		return promptDB(c)
 	}
 	fmt.Println(p.IconGood + " Successfully connected to the database")
